@@ -1,0 +1,54 @@
+{
+	"name": "pkg-template",
+	"version": "1.0.0",
+	"description": "Small js package I use to help me to create npm packages",
+	"scripts": {
+		"lint": "xo --fix",
+		"test": "xo && ava && tsd",
+		"watch:test": "ava --watch"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pnxdxt/package-template.git"
+	},
+	"type": "module",
+	"exports": "./index.js",
+	"engines": {
+		"node": "^12.20.0 || ^14.13.1 || >=16.0.0"
+	},
+	"files": [
+		"index.js",
+		"index.d.ts"
+	],
+	"author": {
+		"name": "Paul Nodet",
+		"email": "paul.nodet@gmail.com",
+		"url": "https://pnodet.com"
+	},
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/pnxdxt/package-template/issues"
+	},
+	"homepage": "https://github.com/pnxdxt/package-template#readme",
+	"devDependencies": {
+		"ava": "^3.15.0",
+		"tsd": "^0.17.0",
+		"xo": "^0.44.0"
+	},
+	"xo": {
+		"singleQuote": true,
+		"prettier": true
+	},
+	"prettier": {
+		"trailingComma": "all",
+		"singleQuote": true,
+		"bracketSpacing": false,
+		"jsxBracketSameLine": false
+	},
+	"keywords": [
+		"helper",
+		"small",
+		"template",
+		"javascript"
+	]
+}
