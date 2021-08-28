@@ -1,14 +1,14 @@
-# pkg-template
-> Small js package I use to help me to create npm packages
+# help-lazyload
+> Small lazy loader js package I use to help me
 
 [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/xojs/xo)
-[![GitHub workflow status](https://img.shields.io/github/workflow/status/pnxdxt/package-template/CI)](https://github.com/pnxdxt/package-template)
-[![npm bundle size](https://img.shields.io/bundlephobia/min/pkg-template)](https://bundlephobia.com/package/pkg-template)
-[![npm downloads](https://img.shields.io/npm/dt/pkg-template)](https://www.npmjs.com/package/pkg-template)
+[![GitHub workflow status](https://img.shields.io/github/workflow/status/pnxdxt/help-lazyload/CI)](https://github.com/pnxdxt/help-lazyload)
+[![npm bundle size](https://img.shields.io/bundlephobia/min/help-lazyload)](https://bundlephobia.com/package/help-lazyload)
+[![npm downloads](https://img.shields.io/npm/dt/help-lazyload)](https://www.npmjs.com/package/help-lazyload)
 
 ## Install
 ```
-$ npm install pkg-template
+$ npm install help-lazyload
 ```
 ## Import
 
@@ -18,10 +18,7 @@ Use `import foo from 'foo'` instead of `const foo = require('foo')` to import th
 
 ```js
 // Load entire build
-import * as pkgName from 'pkg-template';
-
-// Load by method
-import {main} from 'pkg-template';
+import lazyLoad from 'help-lazyload';
 ```
 If the package is used in an async context, you could use [`await import(…)`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#dynamic_imports) from CommonJS instead of `require(…)`.
 
@@ -33,12 +30,7 @@ Read more here: [sindresorhus/esm-package](https://gist.github.com/sindresorhus/
 ## Usage
 
 ```js
-
-main([1,2,3], (element) => typeof element === 'string');
-//=> false
-
-main(['1', '2', '3'], (element) => typeof element === 'string');
-//=> true
+lazyLoad()
 ```
 
 ## License
