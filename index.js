@@ -1,4 +1,5 @@
-export default function lazyLoad(opts) {
+/* globals window, document, IntersectionObserver, cancelAnimationFrame */
+export default function lazyLoad(options_) {
 	const options = {
 		pageUpdatedEventName: 'page:updated',
 		elements:
@@ -8,7 +9,7 @@ export default function lazyLoad(opts) {
 		maxFrameCount: 10,
 	};
 
-	// set up
+	// Set up
 	let frameLoop;
 	let frameCount;
 	let els = [];
@@ -28,6 +29,7 @@ export default function lazyLoad(opts) {
 		for (a = [], i = collection.length; i; ) {
 			a[--i] = collection[i];
 		}
+
 		return a;
 	}
 
@@ -37,9 +39,9 @@ export default function lazyLoad(opts) {
 	 * @param {Node} element to check.
 	 * @returns {Boolean} true/false.
 	 */
-	function _elInViewport(el) {
-		el = el.tagName === 'SOURCE' ? el.parentNode : el;
-		const rect = el.getBoundingClientRect();
+	function _elementInViewport(element) {
+		element = element.tagName === 'SOURCE' ? element.parentNode : element;
+		const rect = element.getBoundingClientRect();
 		return (
 			rect.bottom > 0 &&
 			rect.right > 0 &&
@@ -53,10 +55,10 @@ export default function lazyLoad(opts) {
 	 * @private
 	 * @param {Node} element to update
 	 */
-	function _removeDataAttrs(el) {
-		el.removeAttribute('data-src');
-		el.removeAttribute('data-srcset');
-		el.removeAttribute('data-lazyload');
+	function _removeDataAttrs(element) {
+		element.removeAttribute('data-src');
+		element.removeAttribute('data-srcset');
+		element.removeAttribute('data-lazyload');
 	}
 
 	/**
@@ -73,28 +75,30 @@ export default function lazyLoad(opts) {
 	 * @private
 	 * @param {Node} element to update
 	 */
-	function _updateEl(el) {
-		const srcset = el.getAttribute('data-srcset');
-		const src = el.getAttribute('data-src');
-		const dlazyload = el.getAttribute('data-lazyload') !== null;
+	function _updateElement(element) {
+		const srcset = element.getAttribute('data-srcset');
+		const src = element.getAttribute('data-src');
+		const dlazyload = element.getAttribute('data-lazyload') !== null;
 		//
 		if (srcset) {
-			// if source set, update and try picturefill
-			el.setAttribute('srcset', srcset);
+			// If source set, update and try picturefill
+			element.setAttribute('srcset', srcset);
 			if (window.picturefill) {
 				window.picturefill({
-					elements: [el],
+					elements: [element],
 				});
 			}
 		}
+
 		if (src) {
-			// if source set, update
-			el.src = src;
+			// If source set, update
+			element.src = src;
 		}
+
 		if (dlazyload) {
-			el.setAttribute('data-lazyloaded', '');
-			el.removeEventListener('load', _loaded);
-			_removeDataAttrs(el);
+			element.dataset.lazyloaded = '';
+			element.removeEventListener('load', _loaded);
+			_removeDataAttrs(element);
 		}
 	}
 
@@ -108,16 +112,16 @@ export default function lazyLoad(opts) {
 		if (elsLength === 0) {
 			observer.disconnect();
 		}
+
 		// Loop through the entries
-		for (let i = 0; i < entries.length; i++) {
-			const entry = entries[i];
+		for (const entry of entries) {
 			// Are we in viewport?
 			if (entry.intersectionRatio > 0) {
 				elsLength--;
 				// Stop watching this and load the image
 				observer.unobserve(entry.target);
 				entry.target.addEventListener('load', _loaded, false);
-				_updateEl(entry.target);
+				_updateElement(entry.target);
 			}
 		}
 	}
@@ -128,68 +132,84 @@ export default function lazyLoad(opts) {
 	 */
 	function _setSrcs() {
 		let i;
-		// browser capability check
-		if (checkType === 'really-old') {
-			elsLength = els.length;
-			for (i = 0; i < elsLength; i++) {
-				if (els[i]) {
-					_updateEl(els[i]);
-					_removeDataAttrs(els[i]);
-				}
-			}
-			els = [];
-		} else if (checkType === 'old') {
-			// debounce checking
-			if (frameCount === options.maxFrameCount) {
-				// update cache of this for the loop
+		// Browser capability check
+		switch (checkType) {
+			case 'really-old': {
 				elsLength = els.length;
 				for (i = 0; i < elsLength; i++) {
-					// check if this array item exists, hasn't been loaded already and is in the viewport
-					if (
-						els[i] &&
-						els[i].lazyloaded === undefined &&
-						_elInViewport(els[i])
-					) {
-						// cache this array item
-						const thisEl = els[i];
-						// set this array item to be undefined to be cleaned up later
-						els[i] = undefined;
-						// give this element a property to stop us running twice on one thing
-						thisEl.lazyloaded = true;
-						// add an event listener to remove data- attributes on load
-						thisEl.addEventListener('load', _loaded, false);
-						// update
-						_updateEl(thisEl);
+					if (els[i]) {
+						_updateElement(els[i]);
+						_removeDataAttrs(els[i]);
 					}
 				}
-				// clean up array
-				for (i = 0; i < elsLength; i++) {
-					if (els[i] === undefined) {
-						els.splice(i, 1);
-					}
-				}
-				// reset let to decide if to continue running
-				elsLength = els.length;
-				// will shortly be set to 0 to start counting
-				frameCount = -1;
+
+				els = [];
+
+				break;
 			}
 
-			// run again? kill if not
-			if (elsLength > 0) {
-				frameCount++;
-				frameLoop = window.requestAnimationFrame(_setSrcs);
-			}
-		} else if (checkType === 'new') {
-			observer = new IntersectionObserver(_intersection, {
-				rootMargin: options.rootMargin,
-				threshold: options.threshold,
-			});
-			elsLength = els.length;
-			for (i = 0; i < elsLength; i++) {
-				if (els[i] && els[i].lazyloaded === undefined) {
-					observer.observe(els[i]);
+			case 'old': {
+				// Debounce checking
+				if (frameCount === options.maxFrameCount) {
+					// Update cache of this for the loop
+					elsLength = els.length;
+					for (i = 0; i < elsLength; i++) {
+						// Check if this array item exists, hasn't been loaded already and is in the viewport
+						if (
+							els[i] &&
+							els[i].lazyloaded === undefined &&
+							_elementInViewport(els[i])
+						) {
+							// Cache this array item
+							const thisElement = els[i];
+							// Set this array item to be undefined to be cleaned up later
+							els[i] = undefined;
+							// Give this element a property to stop us running twice on one thing
+							thisElement.lazyloaded = true;
+							// Add an event listener to remove data- attributes on load
+							thisElement.addEventListener('load', _loaded, false);
+							// Update
+							_updateElement(thisElement);
+						}
+					}
+
+					// Clean up array
+					for (i = 0; i < elsLength; i++) {
+						if (els[i] === undefined) {
+							els.splice(i, 1);
+						}
+					}
+
+					// Reset let to decide if to continue running
+					elsLength = els.length;
+					// Will shortly be set to 0 to start counting
+					frameCount = -1;
 				}
+
+				// Run again? kill if not
+				if (elsLength > 0) {
+					frameCount++;
+					frameLoop = window.requestAnimationFrame(_setSrcs);
+				}
+
+				break;
 			}
+
+			case 'new': {
+				observer = new IntersectionObserver(_intersection, {
+					rootMargin: options.rootMargin,
+					threshold: options.threshold,
+				});
+				elsLength = els.length;
+				for (i = 0; i < elsLength; i++) {
+					if (els[i] && els[i].lazyloaded === undefined) {
+						observer.observe(els[i]);
+					}
+				}
+
+				break;
+			}
+			// No default
 		}
 	}
 
@@ -198,21 +218,22 @@ export default function lazyLoad(opts) {
 	 * @private
 	 */
 	function _init() {
-		// kill any old loops if there are any
+		// Kill any old loops if there are any
 		if (checkType === 'old') {
 			try {
 				cancelAnimationFrame(frameLoop);
-			} catch (err) {}
+			} catch {}
 		} else if (checkType === 'new') {
 			try {
 				observer.disconnect();
-			} catch (err) {}
+			} catch {}
 		}
-		// grab elements to lazy load
+
+		// Grab elements to lazy load
 		els = _htmlCollectionToArray(document.querySelectorAll(options.elements));
 		elsLength = els.length;
 		frameCount = options.maxFrameCount;
-		// go go go
+		// Go go go
 		_setSrcs();
 	}
 
@@ -222,11 +243,12 @@ export default function lazyLoad(opts) {
 	 * @param {object} options (see readme)
 	 */
 	function _lazyLoad() {
-		for (const item in opts) {
-			if (opts.hasOwnProperty(item)) {
-				options[item] = opts[item];
+		for (const item in options_) {
+			if (Object.prototype.hasOwnProperty.call(options_, item)) {
+				options[item] = options_[item];
 			}
 		}
+
 		if (
 			!('addEventListener' in window) ||
 			!window.requestAnimationFrame ||
@@ -238,6 +260,7 @@ export default function lazyLoad(opts) {
 		} else {
 			checkType = 'old';
 		}
+
 		_init();
 		if (options.pageUpdatedEventName) {
 			document.addEventListener(options.pageUpdatedEventName, _init, true);
@@ -245,4 +268,4 @@ export default function lazyLoad(opts) {
 	}
 
 	_lazyLoad();
-};
+}
